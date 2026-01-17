@@ -170,17 +170,10 @@ elAno.addEventListener('change',()=>{ano=parseInt(elAno.value); renderizar();});
 elNome.addEventListener('input',()=>{localStorage.setItem('nomeCalendario',elNome.value);});
 elNome.value=localStorage.getItem('nomeCalendario')||'';
 renderizar();
-// === PERSISTÊNCIA AUTOMÁTICA ===
-const _renderizarOriginal = renderizar;
-renderizar = function() {
-  _renderizarOriginal();
-  salvarEstado();
-};
-
-document.addEventListener("DOMContentLoaded", restaurarEstado);
-
 </script>
 
 <script src="storage.js"></script>
 </body>
 </html>
+
+
