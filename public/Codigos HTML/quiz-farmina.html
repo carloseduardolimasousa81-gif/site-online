@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Quiz Farmina - Balconistas PRO</title>
+<style>
+:root {
+  --cor-primaria: #2563eb;
+  --cor-certa: #16a34a;
+  --cor-errada: #dc2626;
+  --cor-cinza: #6b7280;
+}
+body { font-family: Arial, sans-serif; margin: 20px; background: #f9fafb; }
+h1 { text-align: center; margin-bottom: 20px; }
+.card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); max-width: 600px; margin-left:auto;margin-right:auto;}
+.btn { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; margin: 5px 0; display: block; width: 100%; font-size: 16px; transition: 0.2s; }
+.btn:hover { opacity: 0.9; }
+.btn-blue { background: var(--cor-primaria); color: #fff; }
+.btn-green { background: var(--cor-certa); color: #fff; }
+.btn-gray { background: var(--cor-cinza); color: #fff; }
+.input { padding: 8px; margin: 5px 0; width: 100%; border-radius: 6px; border: 1px solid #ccc; }
+.img-resposta { max-width: 100%; margin-top: 10px; border-radius: 8px; }
+#ranking ul { list-style: none; padding: 0; }
+#ranking li { background: #e5e7eb; margin: 5px 0; padding: 8px; border-radius: 6px; }
+#timer { font-size: 18px; margin: 10px 0; color: var(--cor-primaria); font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Quiz Farmina - Balconistas PRO</h1>
+
+<div id="quiz-container"></div>
+<div id="navegacao"></div>
+<div id="ranking"></div>
+
+<div style="max-width:600px;margin:auto;margin-bottom:10px;">
+  <button class="btn btn-gray" id="toggle-edicao">✏️ Modo Edição</button>
+  <button class="btn btn-blue" id="add-question">➕ Adicionar Pergunta</button>
+  <button class="btn btn-green" id="gerar-pdf">📄 Gerar PDF Ranking</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const QuizApp = {
+  perguntas: [], pontuacao: {}, rodadaRanking: {}, mostrarResposta: {},
+  perguntaAtual: 0, participanteAtual: '', participantes: [], modoEdicao: false,
+  ultimaPessoaFalada: '', salvarTimeout: null, tempoRestante: 60, timer: null,
+
+  init() {
+    this.perguntas = JSON.parse(localStorage.getItem('perguntas')) || 
+      Array.from({ length: 30 }, (_, i) => ({
+        id: i+1, texto:'', correta:'', incorreta1:'', incorreta2:'', imagem:'', audio:''
+      }));
+    this.pontuacao = JSON.parse(localStorage.getItem('pontuacao')) || {};
+    
+    document.getElementById('toggle-edicao').addEventListener('click', ()=>this.toggleEdicao());
+    document.getElementById('add-question').addEventListener('click', ()=>this.adicionarPergunta());
+    document.getElementById('gerar-pdf').addEventListener('click', ()=>this.gerarPDF());
+    
+    this.renderQuiz();
+    this.renderRanking();
+  },
+
+  salvarTudo() {
+    clearTimeout(this.salvarTimeout);
+    this.salvarTimeout = setTimeout(()=>{
+      localStorage.setItem('perguntas', JSON.stringify(this.perguntas));
+      localStorage.setItem('pontuacao', JSON.stringify(this.pontuacao));
+    },300);
+  },
+
+  toggleEdicao() {
+    this.modoEdicao = !this.modoEdicao;
+    this.renderQuiz();
+  },
+
+  adicionarPergunta() {
+    const novaPergunta = { id:this.perguntas.length+1, texto:'', correta:'', incorreta1:'', incorreta2:'', imagem:'', audio:''};
+    this.perguntas.push(novaPergunta);
+    this.perguntaAtual = this.perguntas.length-1;
+    this.salvarTudo();
+    this.renderQuiz();
+  },
+
+  embaralharAlternativas(p) {
+    const alt = [
+      { texto: p.correta, correta: true },
+      { texto: p.incorreta1, correta: false },
+      { texto: p.incorreta2, correta: false }
+    ];
+    return alt.sort(()=>Math.random()-0.5);
+  },
+
+  responder(alt) {
+    if(!this.participanteAtual) this.participanteAtual = this.sortearNovoParticipante();
+    clearInterval(this.timer);
+
+    if(alt.correta){
+      this.mostrarResposta[this.perguntas[this.perguntaAtual].id] = true;
+      this.rodadaRanking[this.participanteAtual] = (this.rodadaRanking[this.participanteAtual]||0)+1;
+      this.pontuacao[this.participanteAtual] = (this.pontuacao[this.participanteAtual]||0)+1;
+      this.falarTexto("Resposta correta: "+this.perguntas[this.perguntaAtual].correta);
+      this.renderQuiz();
+      this.renderRanking();
+    } else {
+      this.falarTexto("Resposta incorreta! Novo participante...");
+      this.participanteAtual = this.sortearNovoParticipante();
+      this.iniciarTimer();
+      this.renderQuiz();
+    }
+    this.salvarTudo();
+    this.renderRanking();
+  },
+
+  iniciarTimer() {
+    this.tempoRestante = 60;
+    clearInterval(this.timer);
+    this.timer = setInterval(()=>{
+      this.tempoRestante--;
+      document.getElementById('timer').innerText = `⏳ Tempo: ${this.tempoRestante}s`;
+      if(this.tempoRestante<=0){
+        clearInterval(this.timer);
+        this.falarTexto("Tempo esgotado! Novo participante...");
+        this.participanteAtual = this.sortearNovoParticipante();
+        this.iniciarTimer();
+        this.renderQuiz();
+      }
+    },1000);
+  },
+
+  proximaPergunta() {
+    this.perguntaAtual = Math.min(this.perguntaAtual+1,this.perguntas.length-1);
+    this.participanteAtual='';
+    this.renderQuiz();
+  },
+
+  falarTexto(texto){
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(texto);
+    msg.lang='pt-BR';
+    window.speechSynthesis.speak(msg);
+  },
+
+  mostrarImagem(event,id){
+    const file = event.target.files[0];
+    if(file){
+      const reader = new FileReader();
+      reader.onload = e=>{
+        this.perguntas[id].imagem = e.target.result;
+        this.salvarTudo();
+        this.renderQuiz();
+      };
+      reader.readAsDataURL(file);
+    }
+  },
+
+  mostrarAudio(event,id){
+    const file = event.target.files[0];
+    if(file){
+      const reader = new FileReader();
+      reader.onload = e=>{
+        this.perguntas[id].audio = e.target.result;
+        this.salvarTudo();
+        this.renderQuiz();
+      };
+      reader.readAsDataURL(file);
+    }
+  },
+
+  inicializarParticipantes(){
+    const nomes = prompt("Digite os nomes dos participantes (separados por vírgula):");
+    this.participantes = nomes ? nomes.split(",").map(n=>n.trim()).filter(n=>n) : ["Participante"];
+  },
+
+  sortearNovoParticipante(){
+    if(this.participantes.length===0) return "Participante";
+    return this.participantes[Math.floor(Math.random()*this.participantes.length)];
+  },
+
+  renderQuiz(){
+    if(this.participantes.length===0) this.inicializarParticipantes();
+    const container = document.getElementById('quiz-container');
+    container.innerHTML='';
+    const p = this.perguntas[this.perguntaAtual];
+    if(!this.participanteAtual) this.participanteAtual=this.sortearNovoParticipante();
+
+    const card = document.createElement('div');
+    card.className='card';
+
+    if(this.modoEdicao){
+      card.innerHTML=`
+        <h3>Pergunta #${p.id}</h3>
+        <input class="input" placeholder="Texto da pergunta" value="${p.texto}" onchange="QuizApp.perguntas[${this.perguntaAtual}].texto=this.value;QuizApp.salvarTudo()" />
+        <input class="input" placeholder="Resposta correta" value="${p.correta}" onchange="QuizApp.perguntas[${this.perguntaAtual}].correta=this.value;QuizApp.salvarTudo()" />
+        <input class="input" placeholder="Alternativa incorreta 1" value="${p.incorreta1}" onchange="QuizApp.perguntas[${this.perguntaAtual}].incorreta1=this.value;QuizApp.salvarTudo()" />
+        <input class="input" placeholder="Alternativa incorreta 2" value="${p.incorreta2}" onchange="QuizApp.perguntas[${this.perguntaAtual}].incorreta2=this.value;QuizApp.salvarTudo()" />
+        <input class="input" type="file" accept="image/*" onchange="QuizApp.mostrarImagem(event, ${this.perguntaAtual})" />
+        <input class="input" type="file" accept="audio/*" onchange="QuizApp.mostrarAudio(event, ${this.perguntaAtual})" />
+        ${p.imagem?`<img src="${p.imagem}" class="img-resposta" />`:''}
+      `;
+    } else {
+      card.innerHTML=`<h2>${p.texto||'Pergunta '+p.id}</h2>
+      <p><strong>Participante:</strong> ${this.participanteAtual}</p>
+      <p id="timer">⏳ Tempo: ${this.tempoRestante}s</p>`;
+      
+      if(p.audio){
+        const audioEl = document.createElement('audio');
+        audioEl.src = p.audio;
+        audioEl.autoplay=true;
+        card.appendChild(audioEl);
+      }
+
+      if(!this.mostrarResposta[p.id]){
+        this.embaralharAlternativas(p).forEach(a=>{
+          const btn = document.createElement('button');
+          btn.className='btn btn-blue';
+          btn.innerText=a.texto;
+          btn.onclick=()=>this.responder(a);
+          card.appendChild(btn);
+        });
+        this.iniciarTimer();
+      } else {
+        card.innerHTML+=`<p class="btn-green">✅ Resposta correta: ${p.correta}</p>`;
+        if(p.imagem) card.innerHTML+=`<img src="${p.imagem}" class="img-resposta" />`;
+      }
+    }
+
+    container.appendChild(card);
+
+    document.getElementById('navegacao').innerHTML=`
+      <button class="btn btn-gray" onclick="QuizApp.perguntaAtual=Math.max(0,QuizApp.perguntaAtual-1);QuizApp.participanteAtual='';QuizApp.renderQuiz()">⬅ Anterior</button>
+      <button class="btn btn-blue" onclick="QuizApp.proximaPergunta()">Próxima ➡</button>
+    `;
+
+    if(!this.modoEdicao && p.texto && this.participanteAtual!==this.ultimaPessoaFalada){
+      this.falarTexto(p.texto);
+      this.ultimaPessoaFalada=this.participanteAtual;
+    }
+  },
+
+  renderRanking(){
+    const rankingDiv=document.getElementById('ranking');
+    rankingDiv.innerHTML='<h3>Ranking desta rodada</h3>';
+    const ul=document.createElement('ul');
+    Object.entries(this.rodadaRanking).sort((a,b)=>b[1]-a[1]).forEach(([nome,pontos])=>{
+      const li=document.createElement('li');
+      li.textContent=`${nome}: ${pontos} ponto(s)`;
+      ul.appendChild(li);
+    });
+    rankingDiv.appendChild(ul);
+  },
+
+  gerarPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Ranking Final - Quiz Farmina", 20, 20);
+    let y = 30;
+    Object.entries(this.rodadaRanking).sort((a,b)=>b[1]-a[1]).forEach(([nome,pontos])=>{
+      doc.text(`${nome}: ${pontos} ponto(s)`, 20, y);
+      y += 10;
+    });
+    doc.save("Ranking_Quiz_Farmina.pdf");
+  }
+};
+
+QuizApp.init();
+</script>
+</body>
+</html>

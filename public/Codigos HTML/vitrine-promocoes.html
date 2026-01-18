@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vitrine de Promoções</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      background: #fff;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .form-grid input,
+    .form-grid button {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .form-grid button {
+      background-color: #16a34a;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .form-grid button:hover {
+      background-color: #15803d;
+    }
+    .preview {
+      text-align: center;
+      margin-top: 10px;
+    }
+    .preview img {
+      width: 150px;
+      height: 150px;
+      object-fit: contain;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+    }
+    .navegacao {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+      gap: 10px;
+    }
+    .navegacao button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+    }
+    .btn-anterior, .btn-proximo {
+      background-color: #6b7280;
+    }
+    .btn-toggle {
+      background-color: #2563eb;
+    }
+    .produtos {
+      display: grid;
+      grid-template-columns: 1fr; /* Mobile: 1 coluna */
+      gap: 20px;
+      background: #e5e7eb;
+      padding: 16px;
+      border-radius: 12px;
+    }
+    @media (min-width: 640px) {
+      .produtos {
+        grid-template-columns: repeat(2, 1fr); /* Tablet: 2 colunas */
+      }
+    }
+    @media (min-width: 1024px) {
+      .produtos {
+        grid-template-columns: repeat(3, 1fr); /* Desktop: 3 colunas */
+      }
+    }
+    .produto {
+      background: white;
+      padding: 16px;
+      border-radius: 16px;
+      position: relative;
+      text-align: center;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    }
+    .produto img {
+      width: 100%;
+      height: 160px;
+      object-fit: contain;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+    .produto .remover {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      background: white;
+      border: 1px solid #ccc;
+      color: red;
+      font-weight: bold;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      line-height: 20px;
+      cursor: pointer;
+    }
+    .line-through {
+      text-decoration: line-through;
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="form-grid">
+      <input type="text" id="nome" placeholder="Nome" />
+      <input type="text" id="precoDe" placeholder="Preço De" />
+      <input type="text" id="precoPor" placeholder="Preço Por" />
+      <input type="file" id="imagem" accept="image/*" />
+      <input type="text" id="ean" placeholder="EAN" />
+      <input type="text" id="codigo" placeholder="Código Produto" />
+      <button onclick="adicionarProduto()">Adicionar Produto</button>
+    </div>
+    <div class="preview" id="preview"></div>
+
+    <div class="navegacao" id="navegacao" style="display: none;">
+      <button class="btn-anterior" onclick="mostrarAnterior()">Anterior</button>
+      <button class="btn-toggle" onclick="toggleMostrarTodos()" id="toggleBtn">Mostrar Todos</button>
+      <button class="btn-proximo" onclick="mostrarProximo()">Próximo</button>
+    </div>
+
+    <div class="produtos" id="listaProdutos"></div>
+  </div>
+
+  <script>
+    let produtos = [];
+    let indiceAtual = 0;
+    let mostrarTodos = false;
+    let imagemBase64 = "";
+
+    document.getElementById("imagem").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          imagemBase64 = reader.result;
+          document.getElementById("preview").innerHTML = '<img src="' + imagemBase64 + '" />';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function adicionarProduto() {
+      const nome = document.getElementById("nome").value.trim();
+      const precoDe = document.getElementById("precoDe").value.trim();
+      const precoPor = document.getElementById("precoPor").value.trim();
+      const ean = document.getElementById("ean").value.trim();
+      const codigo = document.getElementById("codigo").value.trim();
+
+      if (!nome || !imagemBase64) return;
+
+      produtos.push({
+        id: Date.now(),
+        nome, precoDe, precoPor, imagem: imagemBase64, ean, codigo
+      });
+
+      document.querySelectorAll('.form-grid input').forEach(input => input.value = '');
+      imagemBase64 = '';
+      document.getElementById("preview").innerHTML = '';
+
+      renderProdutos();
+    }
+
+    function removerProduto(id) {
+      produtos = produtos.filter(prod => prod.id !== id);
+      renderProdutos();
+    }
+
+    function mostrarAnterior() {
+      indiceAtual = (indiceAtual - 3 + produtos.length) % produtos.length;
+      renderProdutos();
+    }
+
+    function mostrarProximo() {
+      indiceAtual = (indiceAtual + 3) % produtos.length;
+      renderProdutos();
+    }
+
+    function toggleMostrarTodos() {
+      mostrarTodos = !mostrarTodos;
+      document.getElementById("toggleBtn").innerText = mostrarTodos ? "Mostrar em Blocos" : "Mostrar Todos";
+      renderProdutos();
+    }
+
+    function renderProdutos() {
+      const lista = document.getElementById("listaProdutos");
+      lista.innerHTML = "";
+
+      const produtosVisiveis = mostrarTodos || produtos.length <= 3
+        ? produtos
+        : produtos.slice(indiceAtual, indiceAtual + 3);
+
+      produtosVisiveis.forEach(prod => {
+        const div = document.createElement("div");
+        div.className = "produto";
+        div.innerHTML = `
+          <div class="remover" onclick="removerProduto(${prod.id})">×</div>
+          <img src="${prod.imagem}" alt="${prod.nome}" />
+          <h2>${prod.nome}</h2>
+          <p>EAN: ${prod.ean}</p>
+          <p>Cód: ${prod.codigo}</p>
+          <p class="line-through">De: ${prod.precoDe}</p>
+          <p style="color:green; font-weight: bold;">Por: ${prod.precoPor}</p>
+        `;
+        lista.appendChild(div);
+      });
+
+      document.getElementById("navegacao").style.display = produtos.length > 3 ? "flex" : "none";
+    }
+
+    // Roda o carrossel automaticamente
+    setInterval(() => {
+      if (produtos.length > 3 && !mostrarTodos) {
+        mostrarProximo();
+      }
+    }, 5000);
+  </script>
+</body>
+</html>

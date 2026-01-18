@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Relatório Mensal - Farmina</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    color: #1E2D5C;
+    overflow: hidden;
+  }
+
+  /* Aba lateral */
+  .sidebar {
+    width: 300px;
+    background: #F0F4F8;
+    padding: 20px;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+    overflow-y: auto;
+  }
+
+  .sidebar h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #1E2D5C;
+    padding-bottom: 10px;
+  }
+
+  .input-group {
+    margin-bottom: 15px;
+  }
+  label {
+    display: block;
+    font-weight: bold;
+  }
+  input, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+
+  button {
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  button.atualizar { background-color: #005BAA; color: #fff; }
+  button.limpar { background-color: #ccc; color: #1E2D5C; }
+
+  /* Conteúdo principal */
+  .main {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  h1 {
+    text-align: center;
+    border-bottom: 2px solid #1E2D5C;
+    padding-bottom: 10px;
+    margin-top: 0;
+  }
+
+  .card {
+    background: #F0F4F8;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card.white { background: #fff; }
+
+  .chart-container {
+    position: relative;
+    height: 250px;
+    width: 250px;
+    margin: auto;
+  }
+  .chart-center-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    font-weight: bold;
+    color: #1E2D5C;
+    pointer-events: none;
+    text-align: center;
+    width: 100px;
+    word-wrap: break-word;
+  }
+  .chart-title {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #6B7280;
+  }
+
+  .grid {
+    display: grid;
+    gap: 20px;
+  }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+  @media (max-width: 1200px) {
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 768px) {
+    body { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>Entrada de Dados</h2>
+  <button class="atualizar" onclick="atualizarDados()">Atualizar Dados</button>
+  <button class="limpar" onclick="limparDados()">Limpar Relatório</button>
+  <form id="form">
+    <div class="input-group">
+      <label for="mes">Mês</label>
+      <select id="mes" name="mes" required>
+        <option value="">Selecione o mês</option>
+        <option>Janeiro</option><option>Fevereiro</option><option>Março</option>
+        <option>Abril</option><option>Maio</option><option>Junho</option>
+        <option>Julho</option><option>Agosto</option><option>Setembro</option>
+        <option>Outubro</option><option>Novembro</option><option>Dezembro</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label>Visitas</label>
+      <select name="visitas"></select>
+    </div>
+
+    <div class="input-group">
+      <label>Pesquisas</label>
+      <select name="pesquisas">
+        <option value="">Selecione</option>
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label>Treinamentos</label>
+      <select name="treinamentos">
+        <option value="">Selecione</option>
+        <option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="8">8</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label>Follow-UP</label>
+      <select name="followup">
+        <option value="">Selecione</option>
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+      </select>
+    </div>
+
+    <div class="input-group"><label>Sell In (R$)</label><input name="sellIn" type="number" step="0.01" min="0" /></div>
+    <div class="input-group"><label>Sell Out (R$)</label><input name="sellOut" type="number" step="0.01" min="0" /></div>
+    <div class="input-group"><label>Sell Out 2024 (R$)</label><input name="sellOutAnterior" type="number" step="0.01" min="0" /></div>
+    <div class="input-group"><label>Volume (Toneladas)</label><input name="toneladaSellOut" type="number" step="0.01" min="0" /></div>
+  </form>
+</div>
+
+<div class="main">
+  <h1>Relatório Mensal - Farmina</h1>
+  <div class="grid grid-2">
+    <div class="card">
+      <h2 id="mes-display">Mês não definido</h2>
+      <p id="visitas-display">Visitas:</p>
+      <p id="pesquisas-display">Pesquisas:</p>
+      <p id="treinamentos-display">Treinamentos:</p>
+      <p id="followup-display">Follow-UP:</p>
+    </div>
+    <div class="card white">
+      <div class="chart-container">
+        <canvas id="sellInChart"></canvas>
+        <div class="chart-center-label" id="sellInChartLabel"></div>
+      </div>
+      <div class="chart-title">Sell In - 2025</div>
+    </div>
+  </div>
+
+  <div class="grid grid-4">
+    <div class="card white">
+      <div class="chart-container">
+        <canvas id="sellOutChart"></canvas>
+        <div class="chart-center-label" id="sellOutChartLabel"></div>
+      </div>
+      <div class="chart-title">Sell Out - 2025</div>
+    </div>
+    <div class="card white">
+      <div class="chart-container">
+        <canvas id="sellOutAnteriorChart"></canvas>
+        <div class="chart-center-label" id="sellOutAnteriorChartLabel"></div>
+      </div>
+      <div class="chart-title">Sell Out - 2024</div>
+    </div>
+    <div class="card white">
+      <div class="chart-container">
+        <canvas id="crescimentoChart"></canvas>
+        <div class="chart-center-label" id="crescimentoChartLabel"></div>
+      </div>
+      <div class="chart-title">Variação Sell Out</div>
+    </div>
+    <div class="card white">
+      <div class="chart-container">
+        <canvas id="toneladasChart"></canvas>
+        <div class="chart-center-label" id="toneladasChartLabel"></div>
+      </div>
+      <div class="chart-title">Volume (Toneladas)</div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const visitasSelect = document.querySelector('select[name="visitas"]');
+  for (let i = 1; i <= 60; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = i;
+    visitasSelect.appendChild(opt);
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById('form');
+  const fields = ['mes','visitas','pesquisas','treinamentos','followup','sellIn','sellOut','sellOutAnterior','toneladaSellOut'];
+  let charts = {};
+
+  function salvarDados() {
+    const data = {};
+    fields.forEach(f => data[f] = form[f].value);
+    localStorage.setItem('relatorioMensal', JSON.stringify(data));
+  }
+
+  function carregarDados() {
+    const saved = localStorage.getItem('relatorioMensal');
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    fields.forEach(f => form[f].value = data[f] || '');
+    atualizarTela(data);
+  }
+
+  function limparDados() {
+    if (confirm("Deseja realmente apagar o relatório?")) {
+      localStorage.removeItem('relatorioMensal');
+      location.reload();
+    }
+  }
+
+  function calcularCrescimento(atual, anterior) {
+    atual = parseFloat(atual);
+    anterior = parseFloat(anterior);
+    if (isNaN(atual) || isNaN(anterior) || anterior === 0) return 'N/A';
+    return ((atual - anterior) / anterior * 100).toFixed(1);
+  }
+
+  function criarGrafico(id, valor, cor, label, isCrescimento = false) {
+    const ctx = document.getElementById(id).getContext('2d');
+    if (charts[id]) charts[id].destroy();
+    const data = isCrescimento ? [valor, 100 - valor] : [1];
+    const isValid = !isNaN(valor) && valor !== 'N/A';
+
+    charts[id] = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: [label], datasets: [{ data: isValid ? data : [0], backgroundColor: isValid ? [cor,'#E5E7EB'] : ['#ccc'], borderWidth:0 }] },
+      options: { cutout: '70%', plugins: { tooltip: { enabled:false }, legend: { display:false } } }
+    });
+
+    const text = isValid ? (isCrescimento ? `${valor}%` : label==='Toneladas' ? parseFloat(valor).toLocaleString('pt-BR') : `R$ ${parseFloat(valor).toLocaleString('pt-BR')}`) : 'N/A';
+    document.getElementById(id+'Label').innerText = text;
+  }
+
+  function atualizarTela(data) {
+    document.getElementById('mes-display').innerText = data.mes || 'Mês não definido';
+    document.getElementById('visitas-display').innerText = 'Visitas: ' + (data.visitas || '');
+    document.getElementById('pesquisas-display').innerText = 'Pesquisas: ' + (data.pesquisas || '');
+    document.getElementById('treinamentos-display').innerText = 'Treinamentos: ' + (data.treinamentos || '');
+    document.getElementById('followup-display').innerText = 'Follow-UP: ' + (data.followup || '');
+
+    criarGrafico('sellInChart', parseFloat(data.sellIn) || 0, '#6B7280', 'Sell In');
+    criarGrafico('sellOutChart', parseFloat(data.sellOut) || 0, '#007C91', 'Sell Out');
+    criarGrafico('sellOutAnteriorChart', parseFloat(data.sellOutAnterior) || 0, '#F59E0B', 'Sell Out 2024');
+    criarGrafico('crescimentoChart', calcularCrescimento(data.sellOut, data.sellOutAnterior), '#005BAA', 'Crescimento', true);
+    criarGrafico('toneladasChart', parseFloat(data.toneladaSellOut) || 0, '#10B981', 'Toneladas');
+  }
+
+  window.atualizarDados = function () {
+    const data = {};
+    fields.forEach(f => data[f] = form[f].value);
+    if (!data.mes) { alert("Por favor, selecione o mês."); return; }
+    salvarDados();
+    atualizarTela(data);
+    alert('Dados atualizados com sucesso!');
+  };
+
+  window.limparDados = limparDados;
+  carregarDados();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard de Metas Anual</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body { margin:0; font-family: Arial, sans-serif; display:flex; height:100vh; background:#f4f6f9; }
+.sidebar { width:280px; background:#1e293b; color:white; padding:20px; }
+.sidebar h2 { font-size:18px; margin-bottom:15px; }
+.sidebar label { display:block; margin:10px 0 5px; }
+.sidebar select, .sidebar input { width:100%; padding:8px; border:none; border-radius:6px; }
+.sidebar input[readonly] { background:#ddd; cursor:not-allowed; }
+.sidebar button { margin-top:15px; padding:10px; width:100%; border:none; border-radius:6px; color:white; font-weight:bold; cursor:pointer; transition:0.3s; }
+.sidebar button:hover { opacity:0.9; }
+.sidebar button.update { background:#38bdf8; }
+.sidebar button.clearAll { background:#ef4444; }
+.dashboard { flex:1; padding:20px; display:flex; flex-direction:column; gap:20px; overflow-y:auto; }
+.cards { display:flex; gap:20px; }
+.card { flex:1; background:white; padding:20px; border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; }
+.card h3 { margin:0; font-size:16px; color:#555; }
+.card p { margin:10px 0 0; font-size:20px; font-weight:bold; }
+.charts { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+.chart-container { background:white; border-radius:12px; padding:20px; box-shadow:0 2px 5px rgba(0,0,0,0.1); width:300px; }
+.chart-container h4 { text-align:center; margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+<h2>Preencha os Dados</h2>
+
+<label>Mês:</label>
+<select id="mes">
+<option value="01">Janeiro</option>
+<option value="02">Fevereiro</option>
+<option value="03">Março</option>
+<option value="04">Abril</option>
+<option value="05">Maio</option>
+<option value="06">Junho</option>
+<option value="07">Julho</option>
+<option value="08">Agosto</option>
+<option value="09">Setembro</option>
+<option value="10">Outubro</option>
+<option value="11">Novembro</option>
+<option value="12">Dezembro</option>
+</select>
+
+<label>Ano:</label>
+<select id="ano"></select>
+
+<label>Meta Comercial (Mensal):</label>
+<input type="number" id="metaComercial">
+
+<label>Realizado Comercial (Mensal):</label>
+<input type="number" id="realizadoComercial">
+
+<label>Meta Ano:</label>
+<input type="number" id="metaAno">
+
+<label>Realizado Ano (Automático):</label>
+<input type="number" id="realizadoAno" readonly>
+
+<button class="update" onclick="salvarEAtualizar()">Atualizar</button>
+<button class="clearAll" onclick="apagarTudo()">Apagar Tudo</button>
+</div>
+
+<div class="dashboard">
+<div class="cards">
+<div class="card">
+<h3>Meta Total Mensal</h3>
+<p id="metaTotalMensal">R$ 0,00</p>
+</div>
+<div class="card">
+<h3>Realizado Total Mensal</h3>
+<p id="realizadoTotalMensal">R$ 0,00</p>
+</div>
+<div class="card">
+<h3>Falta Mensal</h3>
+<p id="faltaTotalMensal">R$ 0,00</p>
+</div>
+</div>
+
+<div class="cards">
+<div class="card">
+<h3>Meta Ano</h3>
+<p id="metaTotalAno">R$ 0,00</p>
+</div>
+<div class="card">
+<h3>Realizado Ano (%)</h3>
+<p id="percentAno">0%</p>
+</div>
+<div class="card">
+<h3>Média Mensal (R$)</h3>
+<p id="mediaMensal">R$ 0,00</p>
+</div>
+</div>
+
+<div class="charts">
+<div class="chart-container">
+<h4>Comercial (Mensal)</h4>
+<canvas id="graficoComercial"></canvas>
+</div>
+<div class="chart-container">
+<h4>Ano</h4>
+<canvas id="graficoAno"></canvas>
+</div>
+<div class="chart-container">
+<h4>Total Geral</h4>
+<canvas id="graficoTotal"></canvas>
+</div>
+</div>
+</div>
+
+<script>
+const anoAtual = new Date().getFullYear();
+const selectAno = document.getElementById("ano");
+for (let ano = 2025; ano <= anoAtual + 2; ano++) {
+    let opt = document.createElement("option");
+    opt.value = ano;
+    opt.textContent = ano;
+    if (ano === anoAtual) opt.selected = true;
+    selectAno.appendChild(opt);
+}
+
+function formatarMoeda(valor){
+    return valor.toLocaleString("pt-BR",{ style:"currency", currency:"BRL" });
+}
+
+// Plugin central para mostrar valor ou percentual real no centro dos gráficos
+const centerText = {
+    id: 'centerText',
+    beforeDraw(chart) {
+        const { width, height, ctx } = chart;
+        ctx.restore();
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "center";
+
+        const realizado = Number(chart.data.datasets[0].data[0] || 0);
+        const falta = Number(chart.data.datasets[0].data[1] || 0);
+        ctx.font = Math.round(height/10) + "px Arial";
+
+        if(chart.canvas.id === "graficoTotal"){
+            // Total Geral mostra valor do mês
+            ctx.fillStyle = "#000";
+            ctx.fillText(formatarMoeda(realizado), width/2, height/2);
+        } else {
+            // Percentual real atingido (podendo passar de 100%)
+            let meta = chart.canvas.id === "graficoComercial" ?
+                        parseFloat(document.getElementById("metaComercial").value) || 0 :
+                        parseFloat(document.getElementById("metaAno").value) || 0;
+            let percentReal = meta > 0 ? (realizado / meta * 100) : 0;
+            let displayPercent = percentReal > 100 ? "+" + percentReal.toFixed(1) + "%" : percentReal.toFixed(1) + "%";
+
+            // Cor do texto: dourado se passar de 100%
+            ctx.fillStyle = percentReal > 100 ? "#d4af37" : "#000";
+            ctx.fillText(displayPercent, width/2, height/2);
+        }
+
+        ctx.save();
+    }
+};
+
+function criarGrafico(ctx){
+    return new Chart(ctx,{
+        type:"doughnut",
+        data:{ labels:["Realizado","Falta"], datasets:[{ data:[0,1], backgroundColor:["#22c55e","#e5e7eb"], borderWidth:2 }] },
+        options:{ cutout:"70%", plugins:{ legend:{ display:false } } },
+        plugins:[centerText]
+    });
+}
+
+let graficoComercial = criarGrafico(document.getElementById("graficoComercial").getContext("2d"));
+let graficoAno = criarGrafico(document.getElementById("graficoAno").getContext("2d"));
+let graficoTotal = criarGrafico(document.getElementById("graficoTotal").getContext("2d"));
+
+function atualizarGrafico(grafico, realizado, meta){
+    let falta = Math.max(meta - realizado,0);
+    grafico.data.datasets[0].data = [realizado,falta];
+
+    let progresso = meta>0 ? realizado/meta : 0;
+    let cor;
+    if(progresso<0.5) cor="#ef4444";
+    else if(progresso<0.8) cor="#eab308";
+    else if(progresso<=1) cor="#22c55e";
+    else cor="#3b82f6"; // azul se passar de 100%
+    grafico.data.datasets[0].backgroundColor = [cor,"#e5e7eb"];
+    grafico.update();
+}
+
+function chavePeriodo(){
+    return `dadosDashboard_${document.getElementById("ano").value}_${document.getElementById("mes").value}`;
+}
+
+function calcularRealizadoAno(anoSelecionado){
+    let total=0;
+    for(let mes=1; mes<=12; mes++){
+        let mm = mes.toString().padStart(2,"0");
+        let key = `dadosDashboard_${anoSelecionado}_${mm}`;
+        let dados = localStorage.getItem(key);
+        if(dados){
+            let obj = JSON.parse(dados);
+            total += parseFloat(obj.realizadoComercial||0);
+        }
+    }
+    return total;
+}
+
+function atualizarDashboard(dados){
+    const metaComercial = dados.metaComercial||0;
+    const realizadoComercial = dados.realizadoComercial||0;
+    const metaAno = parseFloat(document.getElementById("metaAno").value)||0;
+    const realizadoAno = calcularRealizadoAno(document.getElementById("ano").value);
+
+    document.getElementById("realizadoAno").value = realizadoAno;
+
+    // Cards Mensal
+    document.getElementById("metaTotalMensal").textContent = formatarMoeda(metaComercial);
+    document.getElementById("realizadoTotalMensal").textContent = formatarMoeda(realizadoComercial);
+    document.getElementById("faltaTotalMensal").textContent = formatarMoeda(Math.max(metaComercial-realizadoComercial,0));
+
+    // Card ANO
+    document.getElementById("metaTotalAno").textContent = formatarMoeda(metaAno);
+    const percentAno = metaAno>0 ? (realizadoAno/metaAno*100).toFixed(1) : 0;
+    document.getElementById("percentAno").textContent = percentAno+"%";
+
+    // Card Média Mensal (Ano/12)
+    const mediaMensal = realizadoAno/12;
+    document.getElementById("mediaMensal").textContent = formatarMoeda(mediaMensal);
+
+    // Gráficos
+    atualizarGrafico(graficoComercial,realizadoComercial,metaComercial);
+    atualizarGrafico(graficoAno,realizadoAno,metaAno);
+    atualizarGrafico(graficoTotal,realizadoComercial,metaComercial); // total geral = realizado do mês atual
+}
+
+function salvarEAtualizar(){
+    const dados = {
+        metaComercial: parseFloat(document.getElementById("metaComercial").value)||0,
+        realizadoComercial: parseFloat(document.getElementById("realizadoComercial").value)||0
+    };
+    localStorage.setItem(chavePeriodo(),JSON.stringify(dados));
+    atualizarDashboard(dados);
+}
+
+function carregarDados(){
+    const dadosSalvos = localStorage.getItem(chavePeriodo());
+    if(dadosSalvos){
+        const dados = JSON.parse(dadosSalvos);
+        document.getElementById("metaComercial").value = dados.metaComercial;
+        document.getElementById("realizadoComercial").value = dados.realizadoComercial;
+    } else {
+        document.getElementById("metaComercial").value = 0;
+        document.getElementById("realizadoComercial").value = 0;
+    }
+    atualizarDashboard({
+        metaComercial:parseFloat(document.getElementById("metaComercial").value)||0,
+        realizadoComercial:parseFloat(document.getElementById("realizadoComercial").value)||0
+    });
+}
+
+function apagarTudo(){
+    if(confirm("Tem certeza que deseja apagar TODOS os dados salvos?")){
+        for(let i=localStorage.length-1;i>=0;i--){
+            const key = localStorage.key(i);
+            if(key && key.startsWith("dadosDashboard_")) localStorage.removeItem(key);
+        }
+        carregarDados();
+        alert("Todos os dados do dashboard foram apagados!");
+    }
+}
+
+document.getElementById("mes").addEventListener("change", carregarDados);
+document.getElementById("ano").addEventListener("change", carregarDados);
+window.onload = carregarDados;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Markup & Margem — Modernizado</title>
+<style>
+:root{
+  --blue:#0047bb;
+  --red:#dc3545;
+  --green:#28a745;
+  --muted:#ccd6f6;
+  --bg:#f8fafc;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:"Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background:var(--bg);
+  color:#222;
+  display:flex;
+  min-height:100vh;
+}
+.sidebar{
+  width:340px;
+  background:#fff;
+  padding:20px;
+  border-right:2px solid #e9eff7;
+  box-shadow:4px 0 14px rgba(0,0,0,0.04);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.title{ text-align:center; color:var(--blue); font-weight:700; margin-bottom:6px; font-size:1.3rem; }
+label{ font-weight:600; color:#555; font-size:0.9rem; margin-top:8px; display:block; }
+input[type="text"], input[type="number"], select{
+  width:100%; padding:10px 12px; border-radius:8px; border:1.4px solid #ccd6f6;
+  font-size:0.95rem; margin-top:6px;
+}
+input:focus, select:focus{ outline:none; box-shadow:0 0 6px rgba(63,110,255,0.16); border-color:var(--blue); }
+.controls { margin-top:12px; display:flex; gap:8px; align-items:center; }
+.btn-save{
+  width:100%;
+  padding:12px 10px;
+  background:var(--blue); color:#fff;
+  border:none; border-radius:10px; cursor:pointer; font-weight:700;
+}
+.btn-save:hover{ background:#003399 }
+.main{ flex:1; padding:26px; display:flex; flex-direction:column; }
+.main-header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }
+.main h3{ margin:0; color:var(--blue); font-size:1.15rem; font-weight:700; }
+.historico{
+  display:flex;
+  flex-wrap:wrap;
+  gap:18px;
+  max-height:calc(100vh - 150px);
+  overflow-y:auto;
+  padding-right:6px;
+}
+
+/* CARD MODERNO E MAIOR */
+.card{
+  background:#fff;
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:0 12px 28px rgba(0,0,0,0.12);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display:flex;
+  flex-direction:column;
+  width:340px;
+  min-width:300px;
+  max-width:360px;
+  position:relative;
+  flex-shrink:0;
+}
+.card:hover{
+  transform: translateY(-6px);
+  box-shadow:0 18px 36px rgba(0,0,0,0.16);
+}
+/* <<< AQUI: imagem menor e proporcional >>> */
+.card img{
+  width:100%;
+  max-height:100px; /* altura menor */
+  object-fit:contain; /* mantém proporção */
+  border-bottom:1px solid #e6eefc;
+  padding:4px;
+  background:#f8fafc;
+}
+.card-content{
+  padding:16px 18px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.card h4{
+  margin:0;
+  font-size:1.15rem;
+  color:var(--blue);
+  font-weight:700;
+}
+.card small.status{
+  display:inline-block;
+  font-size:0.85rem;
+  font-weight:600;
+  padding:3px 10px;
+  border-radius:12px;
+  background:#e6f0ff;
+  color:#0047bb;
+}
+.card p{
+  margin:2px 0;
+  font-size:0.95rem;
+  color:#333;
+}
+.card .metrics {
+  display:flex;
+  justify-content:space-between;
+  margin-top:8px;
+  font-weight:600;
+  font-size:0.95rem;
+}
+.card canvas {
+  margin-top:10px;
+  display:block;
+  align-self:center;
+  border-radius:8px;
+}
+.btn-apagar{
+  position:absolute; top:8px; right:8px;
+  width:30px; height:30px; border-radius:50%;
+  background:rgba(0,0,0,0.04); border:1px solid rgba(0,0,0,0.06);
+  display:inline-flex; align-items:center; justify-content:center;
+  color:#666; font-weight:700; cursor:pointer;
+  opacity:0; transform:scale(0.9); pointer-events:none; transition:opacity .12s, transform .12s;
+}
+.card:hover .btn-apagar{ opacity:0.98; transform:scale(1); pointer-events:auto; }
+.btn-apagar:hover{ color:var(--red); background:rgba(212,46,46,0.06) }
+.alert{ color:var(--red); font-weight:700; margin-top:4px; text-align:center; font-size:0.85rem; }
+.snackbar{
+  position:fixed; right:18px; bottom:18px; background:#111; color:#fff; padding:10px 12px; border-radius:10px;
+  display:flex; gap:12px; align-items:center; box-shadow:0 6px 18px rgba(0,0,0,0.3); z-index:9999;
+  font-size:0.95rem;
+}
+.snackbar button{ background:transparent; border:1px solid rgba(255,255,255,0.12); color:#fff; padding:6px 8px; border-radius:8px; cursor:pointer; font-weight:700; }
+
+@media (max-width:900px){
+  body{ flex-direction:column; }
+  .sidebar{ width:100%; border-right:none; border-bottom:2px solid #e9eff7; box-shadow:none; }
+  .card{ width:100%; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="title">Markup &amp; Margem</div>
+  <label>EAN</label><input type="text" id="ean" />
+  <label>Cód. Item</label><input type="text" id="codigoItem" />
+  <label>DUN14</label><input type="text" id="codigoDUN14" />
+  <label>Descrição</label><input type="text" id="descricao" />
+  <label>Status</label>
+  <select id="statusProduto">
+    <option value="LANCAMENTO">LANÇAMENTO</option>
+    <option value="INTRODUCAO">INTRODUÇÃO</option>
+    <option value="AJUSTE">AJUSTE</option>
+    <option value="DESCONTINUADO">DESCONTINUADO</option>
+  </select>
+  <label>Imagem (opcional)</label>
+  <input type="file" accept="image/*" onchange="handleImagemUpload(event)" />
+  <img id="preview-img" src="" alt="" style="display:none" />
+  <label><input type="checkbox" id="salvarImagem" checked /> Salvar imagem no histórico</label>
+  <label>Preço (R$)</label><input type="number" id="preco" step="0.01" />
+  <label>Custo (R$)</label><input type="number" id="custo" step="0.01" />
+  <label>ST (R$)</label><input type="number" id="imposto" step="0.01" />
+  <label>IPI / Custos Extras (R$)</label><input type="number" id="custosExtras" step="0.01" />
+  <label>Margem Ideal (%)</label><input type="number" id="margemIdeal" value="45" step="0.1" />
+  <div class="controls">
+    <button class="btn-save" onclick="salvarCalculo()">Salvar Cálculo</button>
+  </div>
+  <canvas id="grafico" width="180" height="180" style="margin-top:8px;"></canvas>
+</div>
+<div class="main">
+  <div class="main-header">
+    <h3>Histórico de Pesquisas</h3>
+    <div>
+      <button onclick="limparHistorico()" style="background:transparent;border:1px solid #e6eefc;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--blue);font-weight:700">Limpar</button>
+    </div>
+  </div>
+  <div class="historico" id="historico"></div>
+</div>
+
+<script>
+let imagemBase64 = "";
+
+function redimensionarImagem(file, maxWidth, maxHeight, callback){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      let canvas = document.createElement('canvas');
+      let ctx = canvas.getContext('2d');
+      let ratio = Math.min(maxWidth/img.width, maxHeight/img.height, 1);
+      canvas.width = img.width*ratio;
+      canvas.height = img.height*ratio;
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      callback(canvas.toDataURL('image/jpeg',0.7));
+    }
+    img.src = e.target.result;
+  }
+  reader.readAsDataURL(file);
+}
+
+function handleImagemUpload(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const preview = document.getElementById('preview-img');
+  preview.src = URL.createObjectURL(file);
+  preview.style.display='block';
+  redimensionarImagem(file,400,400,(base64)=>{imagemBase64=base64;});
+}
+
+function esc(t){return t===null||t===undefined?"":String(t).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);}
+
+function desenharGrafico(valor, canvas, ideal=45){
+  valor=Number(valor)||0; ideal=Number(ideal)||45;
+  const ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
+  const cx=canvas.width/2, cy=canvas.height/2, r=Math.min(cx,cy)-10;
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.fillStyle='#f0f3f8'; ctx.fill();
+  const clamped=Math.max(0,Math.min(100,valor));
+  const start=-0.5*Math.PI; const end=start+2*Math.PI*(clamped/100);
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end); ctx.closePath();
+  ctx.fillStyle=(valor>=ideal)?'#28a745':'#dc3545'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy,r*0.6,0,2*Math.PI); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.fillStyle='#222'; ctx.font="13px 'Segoe UI', Tahoma"; ctx.textAlign='center'; ctx.fillText(valor.toFixed(1)+'%',cx,cy+5);
+  const metaAngle=start+2*Math.PI*(Math.max(0,Math.min(100,ideal))/100);
+  const mx=cx+Math.cos(metaAngle)*(r+6); const my=cy+Math.sin(metaAngle)*(r+6);
+  ctx.beginPath(); ctx.arc(mx,my,3.2,0,2*Math.PI); ctx.fillStyle='#0047bb'; ctx.fill();
+}
+
+function salvarCalculo(){
+  try{
+    const preco = parseFloat(document.getElementById('preco').value)||0;
+    const custo = parseFloat(document.getElementById('custo').value)||0;
+    const imposto = parseFloat(document.getElementById('imposto').value)||0;
+    const custosExtras = parseFloat(document.getElementById('custosExtras').value)||0;
+    const margemIdeal = parseFloat(document.getElementById('margemIdeal').value)||0;
+    const salvarImagem = document.getElementById('salvarImagem').checked;
+    const custoTotal = custo + imposto + custosExtras;
+    const margem = preco ? ((preco - custoTotal)/preco)*100 : 0;
+    const markup = custoTotal ? preco/custoTotal : 0;
+
+    const resumo = {
+      id: Date.now(),
+      ean: document.getElementById('ean').value||"",
+      codigoItem: document.getElementById('codigoItem').value||"",
+      codigoDUN14: document.getElementById('codigoDUN14').value||"",
+      descricao: document.getElementById('descricao').value||"",
+      statusProduto: document.getElementById('statusProduto').value||"",
+      preco: preco.toFixed(2),
+      custoTotal: custoTotal.toFixed(2),
+      margemIdeal: margemIdeal.toFixed(2),
+      margem: margem.toFixed(2),
+      markup: markup.toFixed(2),
+      imagemBase64: salvarImagem ? imagemBase64 : "",
+      saudavel: margem >= margemIdeal
+    };
+
+    let historico = JSON.parse(localStorage.getItem('historicoCalculos'))||[];
+    historico.unshift(resumo);
+    localStorage.setItem('historicoCalculos', JSON.stringify(historico));
+
+    desenharGrafico(Number(resumo.margem),document.getElementById('grafico'),Number(resumo.margemIdeal));
+    exibirHistorico();
+  }catch(e){alert("Erro ao salvar cálculo: "+e);}
+}
+
+let lastDeleted=null,undoTimer=null;
+function showSnackbar(message){
+  const existing=document.getElementById('snack'); if(existing) existing.remove();
+  const div=document.createElement('div'); div.id='snack'; div.className='snackbar';
+  div.innerHTML=`<span>${esc(message)}</span><button id="undoBtn">Desfazer</button>`;
+  document.body.appendChild(div);
+  document.getElementById('undoBtn').addEventListener('click',()=>{
+    if(!lastDeleted) return;
+    const hist=JSON.parse(localStorage.getItem('historicoCalculos'))||[];
+    const idx=Math.min(lastDeleted.index,hist.length);
+    hist.splice(idx,0,lastDeleted.item);
+    localStorage.setItem('historicoCalculos',JSON.stringify(hist));
+    clearTimeout(undoTimer);
+    lastDeleted=null;
+    div.remove();
+    exibirHistorico();
+  });
+  undoTimer=setTimeout(()=>{ lastDeleted=null; div.remove(); },5000);
+}
+
+function apagarCalculo(index){
+  let historico=JSON.parse(localStorage.getItem('historicoCalculos'))||[];
+  const removed=historico.splice(index,1)[0];
+  lastDeleted={item:removed,index:index};
+  localStorage.setItem('historicoCalculos',JSON.stringify(historico));
+  exibirHistorico();
+  showSnackbar('Registro excluído');
+}
+
+function limparHistorico(){
+  if(!confirm('Limpar todo o histórico?')) return;
+  localStorage.removeItem('historicoCalculos');
+  exibirHistorico();
+}
+
+function exibirHistorico(){
+  const historico=JSON.parse(localStorage.getItem('historicoCalculos'))||[];
+  const container=document.getElementById('historico'); container.innerHTML='';
+  if(historico.length===0){
+    const msg=document.createElement('div');
+    msg.style.padding='18px'; msg.style.background='#fff'; msg.style.borderRadius='10px'; msg.style.boxShadow='0 6px 18px rgba(0,0,0,0.04)';
+    msg.textContent='Nenhum registro salvo. Faça um cálculo e clique em "Salvar Cálculo".';
+    container.appendChild(msg);
+    const g=document.getElementById('grafico'); g.getContext('2d').clearRect(0,0,g.width,g.height);
+    return;
+  }
+
+  historico.forEach((item,index)=>{
+    const card=document.createElement('div'); card.className='card';
+    const canvas=document.createElement('canvas'); canvas.width=120; canvas.height=120;
+
+    card.innerHTML=`
+      <button class="btn-apagar" title="Excluir" onclick="apagarCalculo(${index})">×</button>
+      ${item.imagemBase64?`<img src="${item.imagemBase64}" alt="Produto">`:""}
+      <div class="card-content">
+        <h4>${esc(item.descricao || '(sem descrição)')}</h4>
+        <small class="status">${esc(item.statusProduto||'')}</small>
+        <p><strong>EAN:</strong> ${esc(item.ean)}</p>
+        <p><strong>Cód. Item:</strong> ${esc(item.codigoItem)}</p>
+        <p><strong>DUN14:</strong> ${esc(item.codigoDUN14)}</p>
+        <p><strong>Preço:</strong> R$ ${Number(item.preco).toLocaleString('pt-BR')}</p>
+        <p><strong>Custo total:</strong> R$ ${Number(item.custoTotal).toLocaleString('pt-BR')}</p>
+        <div class="metrics">
+          <span>Margem: ${Number(item.margem||0).toFixed(2)}%</span>
+          <span>Markup: ${Number(item.markup||0).toFixed(2)}</span>
+        </div>
+        ${item.saudavel?'':'<p class="alert">Margem abaixo do ideal</p>'}
+      </div>
+    `;
+    card.appendChild(canvas);
+    container.appendChild(card);
+    desenharGrafico(Number(item.margem),canvas,Number(item.margemIdeal||45));
+  });
+}
+
+window.onload=function(){
+  exibirHistorico();
+  desenharGrafico(0,document.getElementById('grafico'),Number(document.getElementById('margemIdeal').value||45));
+};
+</script>
+</body>
+</html>

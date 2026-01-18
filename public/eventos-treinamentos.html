@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calendário de Eventos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eff6ff;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #1e40af;
+      margin-bottom: 20px;
+    }
+    .btn {
+      padding: 10px 20px;
+      margin-bottom: 20px;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(300px,1fr));
+      gap: 16px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 16px;
+    }
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: contain;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    .btn-cancel {
+      background-color: #dc2626;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-save {
+      background-color: #16a34a;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    .btn-cancel:hover {
+      background-color: #991b1b;
+    }
+    .btn-save:hover {
+      background-color: #15803d;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .small {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    @media(max-width:600px){
+      .modal { padding: 12px; border-radius: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CALENDÁRIO DE EVENTOS</h1>
+  <div style="text-align: center;">
+    <button class="btn" onclick="abrirModal()">Adicionar Evento</button>
+  </div>
+
+  <div id="eventosContainer" class="grid"></div>
+
+  <div id="modal" class="modal-bg" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal" role="document">
+      <h2 id="modalTitle" style="color: #1e40af;">Adicionar Evento</h2>
+
+      <!-- Campo para várias datas (texto para permitir múltiplas datas separadas por vírgula) -->
+      <label class="small">Datas: aceite <code>aaaa-mm-dd</code> ou <code>dd/mm/aaaa</code>. Separe várias datas por vírgula.</label>
+      <input type="text" id="data" placeholder="Digite várias datas separadas por vírgula (aaaa-mm-dd ou dd/mm/aaaa)" required />
+
+      <select id="horario" required>
+        <option value="">Selecione o horário</option>
+        <option>09:00</option>
+        <option>09:30</option>
+        <option>10:30</option>
+        <option>11:30</option>
+        <option>12:30</option>
+        <option>13:30</option>
+        <option>14:30</option>
+        <option>15:30</option>
+        <option>16:30</option>
+      </select>
+
+      <select id="nome" required>
+        <option value="">Selecione o tipo de evento</option>
+        <option>Treinamento Técnico</option>
+        <option>Merchandising</option>
+        <option>Almoço de negócios</option>
+        <option>Treinamento N&D</option>
+        <option>Reunião</option>
+        <option>PDV (consultor de campo)</option>
+        <option>GC LIGHT</option>
+        <option>NATAL DOS SHIHTZUS POR AMOR</option>
+      </select>
+
+      <select id="regiao" required>
+        <option value="">Selecione a região</option>
+        <option>OESTE</option>
+        <option>NORTE</option>
+        <option>SUL</option>
+        <option>BARRA</option>
+        <option>RECREIO</option>
+        <option>SERRANA</option>
+        <option>OCEÂNICA</option>
+        <option>LAGOS</option>
+        <option>NITERÓI</option>
+        <option>BAIXADA</option>
+        <option>TIJUCA</option>
+        <option>ILHA</option>
+        <option>COSTA VERDE</option>
+        <option>NORTE FLUMINENSE</option>
+        <option>SÃO GONÇALO</option>
+        <option>SÃO PAULO</option>
+      </select>
+
+      <select id="filiais" required>
+        <option value="">Selecione a filial</option>
+        <!-- FILIAIS combinadas (ambos os códigos) -->
+        <option>AP02 - Jardim Oceânico</option>
+        <option>AP03 - Notre Dame</option>
+        <option>AP04 - Pau Ferro</option>
+        <option>AP05 - Guignard</option>
+        <option>AP06 - Barra (Rio Design)</option>
+        <option>AP07 - Barra (Shell)</option>
+        <option>AP08 - Anil</option>
+        <option>AP09 - Pedro Correa</option>
+        <option>AP10 - Ilha Guanabara</option>
+        <option>AP11 - Copacabana</option>
+        <option>AP12 - Taquara</option>
+        <option>AP13 - Campo Grande</option>
+        <option>AP14 - Geremário Dantas</option>
+        <option>AP15 - Tijuca</option>
+        <option>AP16 - Cachamorra</option>
+        <option>AP17 - Ilha Dende</option>
+        <option>AP18 - Shopping Nova Iguaçu</option>
+        <option>AP19 - Petropolis</option>
+        <option>AP20 - Piratininga</option>
+        <option>AP21 - Abelardo Bueno</option>
+        <option>AP22 - Botafogo</option>
+        <option>AP23 - Meier</option>
+        <option>AP24 - Vila Isabel</option>
+        <option>AP25 - Ipanema</option>
+        <option>AP26 - Santa Rosa</option>
+        <option>AP27 - Realengo</option>
+        <option>AP28 - Recreio Americas</option>
+        <option>AP30 - Caxias</option>
+        <option>AP31 - Conde de Bonfim</option>
+        <option>AP32 - Recreio Gilka</option>
+        <option>AP33 - Catete</option>
+        <option>AP34 - Cacuia</option>
+        <option>AP35 - Nova Iguaçu Dutra</option>
+        <option>AP36 - Copacabana II</option>
+        <option>AP37 - Itaipu</option>
+        <option>AP39 - Estacio</option>
+        <option>AP40 - Bonsucesso</option>
+        <option>AP41 - Bangu</option>
+        <option>AP42 - Itaboraí</option>
+        <option>AP43 - Petrópolis Araras</option>
+        <option>AP44 - Campo Grande Monteiro</option>
+        <option>AP45 - São João de Meriti</option>
+        <option>AP47 - Petrópolis II</option>
+        <option>AP48 - Valqueire</option>
+        <option>AP49 - Araruama</option>
+        <option>AP50 - Icaraí</option>
+        <option>AP51 - Aerotown</option>
+        <option>AP52 - São Pedro da Aldeia</option>
+        <option>AP53 - Barra Golf</option>
+        <option>AP54 - Cachambi</option>
+        <option>AP55 - Itaipú II</option>
+        <option>AP56 - Teresópolis</option>
+        <option>AP57 - Maricá</option>
+        <option>AP58 - Vargem Grande</option>
+        <option>AP61 - Pendotiba</option>
+        <option>PÉS E PATAS</option>
+        <option>4PATAS</option>
+        <option>MB ALIANCE</option>
+
+        <option>ARARUAMA - VILA CAPRI</option>
+        <option>ARARUAMA - CENTRO</option>
+        <option>ANGRA DOS REIS - DOM ATACADISTA</option>
+        <option>BELFORD ROXO - ATACADÃO</option>
+        <option>BUZIOS</option>
+        <option>DUQUE DE CAXIAS - PREZUNIC</option>
+        <option>DUQUE DE CAXIAS DOM ATACADISTA</option>
+        <option>MAGÉ</option>
+        <option>NOVA IGUAÇU - SUPER BOM</option>
+        <option>QUEIMADO - REDE ECONOMIA</option>
+        <option>CABO FRIO - CENTRO</option>
+        <option>CABO FRIO - SÃO CRISTOVÃO</option>
+        <option>CABO FRIO - JARDIM ESPERANÇA</option>
+        <option>ITABORAÍ - CIDADE NORTE</option>
+        <option>ITABORAÍ - MANILHA</option>
+        <option>ITABORAÍ - OUTEIRO PEDRAS</option>
+        <option>ITABORAÍ - PLAZA SHOPPING</option>
+        <option>ITABORAÍ - RIO VARZEA</option>
+        <option>ITABORAÍ - TUBARÃO BR101</option>
+        <option>ITABORAÍ - VENDA DAS PEDRAS</option>
+        <option>MACAÉ</option>
+        <option>CENTRO - MARICÁ</option>
+        <option>MARICÁ - PREZUNIC</option>
+        <option>SANTA ROSA</option>
+        <option>PENDOTIBA</option>
+        <option>PIRATININGA</option>
+        <option>LARGO DA BATALHA</option>
+        <option>ITAIPU</option>
+        <option>ICARAÍ II</option>
+        <option>ICARAÍ</option>
+        <option>FONSECA</option>
+        <option>CENTRO II</option>
+        <option>CENTRO</option>
+        <option>BALDEADOR</option>
+        <option>RIO DAS OSTRAS</option>
+        <option>TIJUCA - GUANABARA</option>
+        <option>PENHA - GUANABARA</option>
+        <option>INHAÚMA - DOM ATACADISTA</option>
+        <option>GUADALUPE - SHOPPING</option>
+        <option>CAMPINHO - GUANABARA</option>
+        <option>GÁVEA</option>
+        <option>BOTAFOGO</option>
+        <option>URCA</option>
+        <option>COPACABANA - RONALD DE CARVALHO</option>
+        <option>COPACABANA - SANTA CLARA</option>
+        <option>CIDADE DE DEUS - PREZUNIC</option>
+        <option>RECREIO DOS BANDEIRANTES</option>
+        <option>TANQUE GUANABARA</option>
+        <option>SANTA CRUZ - PREZUNIC</option>
+        <option>FREGUESIA - MUNDIAL</option>
+        <option>CURICICA - MUNDIAL</option>
+        <option>CAMPO GRANDE - SUPER BOM</option>
+        <option>CAMPO GRANDE - GUANABARA</option>
+        <option>BACAXÁ TREVO - SAQUAREMA</option>
+        <option>BACAXÁ CENTRO - SAQUAREMA</option>
+        <option>VISTA ALEGRE - COSTA AZUL</option>
+        <option>TRINDADE</option>
+        <option>SANTA CATARINA</option>
+        <option>ROCHA</option>
+        <option>PARAÍSO</option>
+        <option>JARDIM ALCÂNTARA COSTAZUL</option>
+        <option>GUANABARA - SÃO CONÇALO</option>
+        <option>CENTRO - SÃO GONÇALO</option>
+        <option>CEASA - SÃO GONÇALO</option>
+        <option>ALCÂTARA RAUL VEIGA</option>
+        <option>ALCÂTARA CARREFOUR</option>
+        <option>ALCÂTARA CENTRO</option>
+        <option>UBATUBA - SHIBATA</option>
+        <option>SUZANO - SHIBATA</option>
+        <option>PINDAMONHANGABA - SHIBATA</option>
+        <option>CRUZEIRO</option>
+        <option>PETZ</option>
+        <option>PRA BICHO - VISTA ALEGRE</option>
+        <option>PRA BICHO ANCARAÍ</option>
+        <option>PRA BICHO ROCHA MIRANDA</option>
+        <option>PRA BICHO ILHA DO GOVERNADOR</option>
+        <option>FLAMENGO</option>
+      </select>
+
+      <select id="duracao" required>
+        <option value="">Selecione a duração</option>
+        <option>30 Minutos</option>
+        <option>1 Hora</option>
+        <option>3 Horas</option>
+        <option>6 Horas</option>
+        <option>Horário Comercial</option>
+      </select>
+
+      <select id="dinamica" required>
+        <option value="">Selecione a dinâmica</option>
+        <option>Linha N&D e VET LIFE (DRY e WET)</option>
+        <option>N&D (DRY e WET)</option>
+        <option>Arrumação de loja</option>
+        <option>Negociação</option>
+        <option>Dúvidas pontuais</option>
+        <option>Gestão</option>
+        <option>Abordagem, geração e validação de cupons</option>
+        <option>Abordagem e validação</option>
+        <option>Evento Loja</option>
+      </select>
+
+      <input type="text" id="local" placeholder="Local do evento" />
+      <input type="file" accept="image/*" onchange="previewFoto(event)" />
+      <img id="previewImagem" style="display:none; width:100%; height:180px; object-fit:contain; margin-top:10px; border-radius:8px;" />
+
+      <div class="modal-actions">
+        <button class="btn btn-save" onclick="salvarEvento()">Salvar Evento</button>
+        <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // estado
+  let eventos = [];
+  let novaFotoBase64 = "";
+
+  // carrega do localStorage (se houver)
+  const STORAGE_KEY = "calendario_eventos_v1";
+  function carregarEventos() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) eventos = JSON.parse(raw) || [];
+    } catch (e) {
+      console.warn("Erro ao carregar eventos:", e);
+      eventos = [];
+    }
+  }
+  function salvarEventosStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(eventos));
+    } catch (e) {
+      console.warn("Erro ao salvar eventos:", e);
+    }
+  }
+
+  // abrir / fechar modal
+  function abrirModal() {
+    document.getElementById("modal").style.display = "flex";
+  }
+
+  function fecharModal() {
+    document.getElementById("modal").style.display = "none";
+    limparFormulario();
+  }
+
+  // fechar modal ao clicar fora
+  document.getElementById("modal").addEventListener("click", function(e){
+    if (e.target === this) fecharModal();
+  });
+
+  function limparFormulario() {
+    document.getElementById("data").value = "";
+    document.getElementById("horario").value = "";
+    document.getElementById("nome").value = "";
+    document.getElementById("regiao").value = "";
+    document.getElementById("filiais").value = "";
+    document.getElementById("duracao").value = "";
+    document.getElementById("dinamica").value = "";
+    document.getElementById("local").value = "";
+    document.getElementById("previewImagem").style.display = "none";
+    document.getElementById("previewImagem").src = "";
+    novaFotoBase64 = "";
+  }
+
+  // preview da foto
+  function previewFoto(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      novaFotoBase64 = reader.result;
+      const img = document.getElementById("previewImagem");
+      img.src = novaFotoBase64;
+      img.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // valida e formata data
+  function parseDataEntrada(dataStr) {
+    // aceita "aaaa-mm-dd" ou "dd/mm/aaaa" ou "dd-mm-aaaa" (retorna string ISO aaaa-mm-dd)
+    const s = dataStr.trim();
+    if (!s) return null;
+    // já no formato ISO?
+    const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoMatch) {
+      return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+    }
+    // dd/mm/aaaa ou dd-mm-aaaa
+    const dmyMatch = s.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
+    if (dmyMatch) {
+      const dia = dmyMatch[1], mes = dmyMatch[2], ano = dmyMatch[3];
+      return `${ano}-${mes}-${dia}`;
+    }
+    // tentativa de parse com Date (fallback)
+    const parsed = new Date(s);
+    if (!isNaN(parsed.getTime())) {
+      const y = parsed.getFullYear();
+      const m = String(parsed.getMonth()+1).padStart(2,'0');
+      const d = String(parsed.getDate()).padStart(2,'0');
+      return `${y}-${m}-${d}`;
+    }
+    return null;
+  }
+
+  // salvar evento (suporta múltiplas datas separadas por vírgula)
+  function salvarEvento() {
+    const dataInput = document.getElementById("data").value;
+    const horario = document.getElementById("horario").value;
+    const nome = document.getElementById("nome").value;
+    const regiao = document.getElementById("regiao").value;
+    const filiais = document.getElementById("filiais").value;
+    const duracao = document.getElementById("duracao").value;
+    const dinamica = document.getElementById("dinamica").value;
+    const local = document.getElementById("local").value;
+
+    if (!dataInput || !horario || !nome || !regiao || !filiais || !duracao || !dinamica) {
+      alert("Por favor, preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    // trata múltiplas datas
+    const rawDates = dataInput.split(",").map(d => d.trim()).filter(Boolean);
+    const parsedDates = [];
+    for (const rd of rawDates) {
+      const p = parseDataEntrada(rd);
+      if (!p) {
+        alert(`Formato de data inválido: "${rd}". Use aaaa-mm-dd ou dd/mm/aaaa.`);
+        return;
+      }
+      parsedDates.push(p);
+    }
+
+    parsedDates.forEach(dataIso => {
+      eventos.push({
+        id: gerarId(),
+        data: dataIso,
+        horario,
+        nome,
+        regiao,
+        filiais,
+        duracao,
+        dinamica,
+        local,
+        foto: novaFotoBase64
+      });
+    });
+
+    salvarEventosStorage();
+    renderizarEventos();
+    fecharModal();
+  }
+
+  // gerar id simples
+  function gerarId() {
+    return 'e_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+  }
+
+  // renderizar lista de eventos
+  function renderizarEventos() {
+    const container = document.getElementById("eventosContainer");
+    container.innerHTML = "";
+    if (!eventos.length) {
+      container.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#444;">Nenhum evento cadastrado.</p>';
+      return;
+    }
+    eventos.forEach((ev) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <h3 style="color:#1e40af; margin:0 0 8px 0">${formatarData(ev.data)} - ${ev.horario}</h3>
+        ${ev.foto ? `<img src="${ev.foto}" alt="Foto do evento" />` : ""}
+        <p style="margin:8px 0 0 0"><strong>${ev.nome}</strong></p>
+        <p style="margin:4px 0 0 0">Região: ${ev.regiao}</p>
+        <p style="margin:4px 0 0 0">Filial: ${ev.filiais}</p>
+        <p style="margin:4px 0 0 0">Duração: ${ev.duracao}</p>
+        <p style="margin:4px 0 8px 0">Dinâmica: ${ev.dinamica}</p>
+        <p style="margin:0 0 8px 0">Local: ${ev.local || "N/A"}</p>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
+          <button onclick="removerEvento('${ev.id}')" style="background:#ef4444;border:none;color:white;padding:6px 10px;border-radius:8px;cursor:pointer">Excluir</button>
+          <button onclick="duplicarEvento('${ev.id}')" style="background:#2563eb;border:none;color:white;padding:6px 10px;border-radius:8px;cursor:pointer">Duplicar</button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // formatar data para exibição dd/mm/aaaa
+  function formatarData(dataISO) {
+    if (!dataISO) return "";
+    const m = dataISO.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    return dataISO;
+  }
+
+  // remover evento por id
+  function removerEvento(id) {
+    if (!confirm("Deseja realmente excluir este evento?")) return;
+    eventos = eventos.filter(e => e.id !== id);
+    salvarEventosStorage();
+    renderizarEventos();
+  }
+
+  // duplicar evento (cria com nova id)
+  function duplicarEvento(id) {
+    const ev = eventos.find(e => e.id === id);
+    if (!ev) return;
+    const copy = Object.assign({}, ev, { id: gerarId() });
+    eventos.push(copy);
+    salvarEventosStorage();
+    renderizarEventos();
+  }
+
+  // inicialização
+  carregarEventos();
+  renderizarEventos();
+</script>
+
+</body>
+</html>

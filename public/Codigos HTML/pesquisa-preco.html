@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pesquisa de Preço Online</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9fafb;
+      margin: 0; padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .form-grid {
+      background: white;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(200px,1fr));
+      gap: 12px;
+      align-items: center;
+    }
+    input[type="text"], input[type="date"], select, input[type="file"] {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button {
+      background: #16a34a;
+      border: none;
+      color: white;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      grid-column: 1 / -1;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background: #15803d;
+    }
+    .img-preview {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: center;
+    }
+    .img-preview img {
+      max-width: 200px;
+      max-height: 200px;
+      object-fit: contain;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+    }
+    .nav-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+    .nav-buttons button {
+      background: #6b7280;
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+    .nav-buttons button:hover {
+      background: #4b5563;
+    }
+    .nav-buttons .toggle {
+      background: #2563eb;
+    }
+    .nav-buttons .toggle:hover {
+      background: #1e40af;
+    }
+    .produtos-grid {
+      background: #f3f4f6;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(180px,1fr));
+      gap: 16px;
+    }
+    .produto-card {
+      background: white;
+      padding: 12px;
+      border-radius: 24px;
+      box-shadow: 0 2px 10px rgb(0 0 0 / 0.1);
+      text-align: center;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .produto-card img {
+      width: 100%;
+      max-height: 180px;
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      margin-bottom: 8px;
+    }
+    .produto-card h2 {
+      font-size: 16px;
+      margin: 4px 0;
+      font-weight: 600;
+    }
+    .produto-card p {
+      font-size: 13px;
+      margin: 2px 0;
+      color: #4b5563;
+    }
+    .preco-de {
+      color: #dc2626 !important; /* vermelho */
+      text-decoration: line-through !important;
+    }
+    .preco-por {
+      color: #2563eb !important; /* azul */
+      font-weight: 700 !important;
+      font-size: 18px !important;
+      margin-top: 4px !important;
+    }
+    .btn-remover {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: white;
+      border-radius: 50%;
+      border: 1px solid #f87171;
+      color: #dc2626;
+      font-weight: bold;
+      cursor: pointer;
+      width: 24px;
+      height: 24px;
+      line-height: 22px;
+      font-size: 18px;
+      padding: 0;
+      text-align: center;
+      transition: background-color 0.3s ease;
+    }
+    .btn-remover:hover {
+      background: #fee2e2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <form id="formProduto" class="form-grid" onsubmit="return false;">
+      <input type="text" id="nome" name="nome" placeholder="Nome" required />
+      <input type="text" id="precoDe" name="precoDe" placeholder="Preço De" />
+      <input type="text" id="precoPor" name="precoPor" placeholder="Preço Por" />
+      <input type="file" id="imagem" accept="image/*" />
+      <input type="text" id="ean" name="ean" placeholder="EAN" />
+      <input type="text" id="codigo" name="codigo" placeholder="Código Produto" />
+      <select id="loja" name="loja" required>
+        <option value="">Selecione a Loja</option>
+        <option value="AMERICAN PET">AMERICAN PET</option>
+        <option value="COBASI">COBASI</option>
+        <option value="PETZ">PETZ</option>
+        <option value="LUPI">LUPI</option>
+        <option value="PÉS E PATAS">PÉS E PATAS</option>
+      </select>
+      <input type="date" id="dataPesquisa" name="dataPesquisa" />
+      <select id="origem" name="origem">
+        <option value="">Origem</option>
+        <option value="SITE">SITE</option>
+        <option value="LOJA">LOJA</option>
+      </select>
+      <button id="btnAdicionar">Adicionar Produto</button>
+      <div class="img-preview" id="imgPreviewContainer" style="display:none;">
+        <img id="imgPreview" alt="Prévia da Imagem" />
+      </div>
+    </form>
+
+    <div id="navegacao" class="nav-buttons" style="display:none;">
+      <button id="btnAnterior">Anterior</button>
+      <button id="btnMostrarTodos" class="toggle">Mostrar Todos</button>
+      <button id="btnProximo">Próximo</button>
+    </div>
+
+    <div id="produtosGrid" class="produtos-grid"></div>
+  </div>
+
+  <script>
+    (() => {
+      const produtos = [];
+      let indiceAtual = 0;
+      let mostrarTodos = false;
+      let intervaloID = null;
+
+      const dataAtual = new Date().toISOString().split('T')[0];
+      const form = document.getElementById('formProduto');
+      const nomeInput = document.getElementById('nome');
+      const precoDeInput = document.getElementById('precoDe');
+      const precoPorInput = document.getElementById('precoPor');
+      const imagemInput = document.getElementById('imagem');
+      const eanInput = document.getElementById('ean');
+      const codigoInput = document.getElementById('codigo');
+      const lojaSelect = document.getElementById('loja');
+      const dataPesquisaInput = document.getElementById('dataPesquisa');
+      const origemSelect = document.getElementById('origem');
+      const btnAdicionar = document.getElementById('btnAdicionar');
+      const imgPreviewContainer = document.getElementById('imgPreviewContainer');
+      const imgPreview = document.getElementById('imgPreview');
+      const produtosGrid = document.getElementById('produtosGrid');
+      const navegacao = document.getElementById('navegacao');
+      const btnAnterior = document.getElementById('btnAnterior');
+      const btnMostrarTodos = document.getElementById('btnMostrarTodos');
+      const btnProximo = document.getElementById('btnProximo');
+
+      // Set dataPesquisa default value
+      dataPesquisaInput.value = dataAtual;
+
+      let imagemDataURL = null;
+
+      imagemInput.addEventListener('change', () => {
+        const file = imagemInput.files[0];
+        if (!file) {
+          imagemDataURL = null;
+          imgPreviewContainer.style.display = 'none';
+          imgPreview.src = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          imagemDataURL = reader.result;
+          imgPreview.src = imagemDataURL;
+          imgPreviewContainer.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+      });
+
+      function renderProdutos() {
+        produtosGrid.innerHTML = '';
+
+        if (produtos.length === 0) {
+          navegacao.style.display = 'none';
+          return;
+        }
+
+        navegacao.style.display = produtos.length > 4 ? 'flex' : 'none';
+
+        let visiveis = [];
+        if (mostrarTodos || produtos.length <= 4) {
+          visiveis = produtos;
+        } else {
+          // slice com cuidado para não passar do tamanho
+          visiveis = produtos.slice(indiceAtual, indiceAtual + 4);
+          if (visiveis.length < 4 && produtos.length > 4) {
+            visiveis = visiveis.concat(produtos.slice(0, 4 - visiveis.length));
+          }
+        }
+
+        visiveis.forEach((p) => {
+          const card = document.createElement('div');
+          card.className = 'produto-card';
+
+          const btnRemover = document.createElement('button');
+          btnRemover.className = 'btn-remover';
+          btnRemover.textContent = '×';
+          btnRemover.title = 'Remover produto';
+          btnRemover.onclick = () => {
+            removerProduto(p.id);
+          };
+          card.appendChild(btnRemover);
+
+          const img = document.createElement('img');
+          img.src = p.imagem;
+          img.alt = p.nome;
+          card.appendChild(img);
+
+          const nome = document.createElement('h2');
+          nome.textContent = p.nome;
+          card.appendChild(nome);
+
+          const ean = document.createElement('p');
+          ean.textContent = `EAN: ${p.ean || '-'}`;
+          card.appendChild(ean);
+
+          const codigo = document.createElement('p');
+          codigo.textContent = `Cód: ${p.codigo || '-'}`;
+          card.appendChild(codigo);
+
+          const loja = document.createElement('p');
+          loja.textContent = `Loja: ${p.loja || '-'}`;
+          card.appendChild(loja);
+
+          const origem = document.createElement('p');
+          origem.textContent = `Origem: ${p.origem || '-'}`;
+          card.appendChild(origem);
+
+          const dataPesquisa = document.createElement('p');
+          dataPesquisa.textContent = `Data: ${p.dataPesquisa || '-'}`;
+          card.appendChild(dataPesquisa);
+
+          const precoDe = document.createElement('p');
+          precoDe.className = 'preco-de';
+          precoDe.textContent = `De: ${p.precoDe || '-'}`;
+          card.appendChild(precoDe);
+
+          const precoPor = document.createElement('p');
+          precoPor.className = 'preco-por';
+          precoPor.textContent = `Por: ${p.precoPor || '-'}`;
+          card.appendChild(precoPor);
+
+          produtosGrid.appendChild(card);
+        });
+      }
+
+      function removerProduto(id) {
+        const idx = produtos.findIndex(p => p.id === id);
+        if (idx === -1) return;
+        produtos.splice(idx, 1);
+
+        // Ajustar indiceAtual se necessário
+        if (indiceAtual >= produtos.length && produtos.length > 0) {
+          indiceAtual = Math.max(0, produtos.length - 4);
+        }
+
+        renderProdutos();
+        reiniciarIntervalo();
+      }
+
+      function reiniciarIntervalo() {
+        if (intervaloID) clearInterval(intervaloID);
+        if (produtos.length > 4 && !mostrarTodos) {
+          intervaloID = setInterval(() => {
+            mostrarProximo();
+          }, 5000);
+        }
+      }
+
+      function mostrarAnterior() {
+        indiceAtual = (indiceAtual - 4 + produtos.length) % produtos.length;
+        renderProdutos();
+      }
+      function mostrarProximo() {
+        indiceAtual = (indiceAtual + 4) % produtos.length;
+        renderProdutos();
+      }
+      function toggleMostrarTodos() {
+        mostrarTodos = !mostrarTodos;
+        btnMostrarTodos.textContent = mostrarTodos ? 'Mostrar em Blocos' : 'Mostrar Todos';
+        renderProdutos();
+        reiniciarIntervalo();
+      }
+
+      btnAnterior.addEventListener('click', mostrarAnterior);
+      btnProximo.addEventListener('click', mostrarProximo);
+      btnMostrarTodos.addEventListener('click', toggleMostrarTodos);
+
+      btnAdicionar.addEventListener('click', () => {
+        const nome = nomeInput.value.trim();
+        const precoDe = precoDeInput.value.trim();
+        const precoPor = precoPorInput.value.trim();
+        const ean = eanInput.value.trim();
+        const codigo = codigoInput.value.trim();
+        const loja = lojaSelect.value;
+        const dataPesquisa = dataPesquisaInput.value || dataAtual;
+        const origem = origemSelect.value;
+
+        if (!nome) {
+          alert('Por favor, preencha o nome do produto.');
+          return;
+        }
+        if (!imagemDataURL) {
+          alert('Por favor, envie uma imagem do produto.');
+          return;
+        }
+        if (!loja) {
+          alert('Por favor, selecione a loja.');
+          return;
+        }
+
+        const produto = {
+          id: Date.now() + Math.random(),
+          nome,
+          precoDe,
+          precoPor,
+          imagem: imagemDataURL,
+          ean,
+          codigo,
+          loja,
+          dataPesquisa,
+          origem
+        };
+
+        produtos.push(produto);
+
+        // Reset form
+        form.reset();
+        dataPesquisaInput.value = dataAtual;
+        imagemDataURL = null;
+        imgPreviewContainer.style.display = 'none';
+        imgPreview.src = '';
+
+        // Atualizar visualização
+        renderProdutos();
+        reiniciarIntervalo();
+      });
+
+      renderProdutos();
+    })();
+  </script>
+</body>
+</html>

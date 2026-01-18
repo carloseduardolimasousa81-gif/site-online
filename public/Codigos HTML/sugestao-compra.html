@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Sugestão Promocional de Compra</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .delete-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 14px;
+      line-height: 22px;
+      text-align: center;
+      cursor: pointer;
+      display: none;
+    }
+    .card:hover .delete-btn {
+      display: block;
+    }
+    .bg-farmina {
+      background-color: #0077C8; /* Azul oficial Farmina */
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+  <!-- Header -->
+  <header class="bg-farmina text-white p-6 text-center text-3xl font-bold tracking-wide">
+    Sugestão Promocional de Compra
+  </header>
+
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside class="w-80 bg-white shadow-lg p-6">
+      <h2 class="text-xl font-bold mb-4 text-gray-800">Cadastrar Produto</h2>
+      <form id="productForm" class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-600">Código EAN</label>
+          <input type="text" id="ean" class="w-full border rounded p-2" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600">Código do Produto</label>
+          <input type="text" id="codigo" class="w-full border rounded p-2" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600">Produto</label>
+          <input type="text" id="produto" class="w-full border rounded p-2" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600">Preço De</label>
+          <input type="number" step="0.01" id="precoDe" class="w-full border rounded p-2" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600">Preço Por (10% OFF)</label>
+          <input type="number" step="0.01" id="precoPor" class="w-full border rounded p-2 bg-gray-100" readonly>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600">Foto do Produto</label>
+          <input type="file" id="foto" accept="image/*" class="w-full border rounded p-2">
+        </div>
+        <button type="submit" class="w-full bg-farmina text-white p-2 rounded font-semibold hover:brightness-90">
+          Adicionar Produto
+        </button>
+      </form>
+    </aside>
+
+    <!-- Main Vitrine -->
+    <main class="flex-1 p-8">
+      <h2 class="text-2xl font-bold mb-6 text-gray-800">Produtos Participantes</h2>
+      <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </main>
+  </div>
+
+  <script>
+    const form = document.getElementById('productForm');
+    const productList = document.getElementById('productList');
+    const precoDeInput = document.getElementById('precoDe');
+    const precoPorInput = document.getElementById('precoPor');
+
+    // Calcula desconto automaticamente
+    precoDeInput.addEventListener('input', () => {
+      const precoDe = parseFloat(precoDeInput.value);
+      if (!isNaN(precoDe)) {
+        const precoPor = (precoDe * 0.9).toFixed(2); // 10% OFF
+        precoPorInput.value = precoPor;
+      } else {
+        precoPorInput.value = "";
+      }
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const ean = document.getElementById('ean').value;
+      const codigo = document.getElementById('codigo').value;
+      const produto = document.getElementById('produto').value;
+      const precoDe = parseFloat(precoDeInput.value).toFixed(2);
+      const precoPor = parseFloat(precoPorInput.value).toFixed(2);
+      const fotoFile = document.getElementById('foto').files[0];
+
+      // Função para criar card
+      const createCard = (fotoURL) => {
+        const card = document.createElement('div');
+        card.className = "card relative bg-white shadow-lg rounded-xl p-6 hover:shadow-2xl transition flex flex-col items-center text-center";
+
+        card.innerHTML = `
+          <div class="delete-btn">×</div>
+          ${fotoURL ? `<img src="${fotoURL}" alt="${produto}" class="w-32 h-32 object-contain mb-4">` : ""}
+          <div class="text-gray-600 text-sm">EAN: ${ean}</div>
+          <div class="text-gray-600 text-sm">Cód: ${codigo}</div>
+          <h3 class="text-lg font-bold text-gray-900 mt-2">${produto}</h3>
+          <p class="text-sm text-gray-500 line-through">De: R$ ${precoDe}</p>
+          <p class="text-xl font-bold text-green-600">Por: R$ ${precoPor}</p>
+          <span class="mt-2 inline-block bg-farmina text-white text-xs px-3 py-1 rounded-full">-10%</span>
+        `;
+
+        // Botão excluir
+        card.querySelector('.delete-btn').addEventListener('click', () => {
+          card.remove();
+        });
+
+        productList.appendChild(card);
+      };
+
+      if (fotoFile) {
+        const reader = new FileReader();
+        reader.onload = (event) => createCard(event.target.result);
+        reader.readAsDataURL(fotoFile);
+      } else {
+        createCard(null);
+      }
+
+      form.reset();
+      precoPorInput.value = "";
+    });
+  </script>
+</body>
+</html>
