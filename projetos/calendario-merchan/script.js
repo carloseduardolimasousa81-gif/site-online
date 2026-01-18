@@ -1,4 +1,4 @@
-let hoje = new Date();
+klet hoje = new Date();
 let mes = hoje.getMonth();
 let ano = hoje.getFullYear();
 let dias = [];
